@@ -19,6 +19,13 @@ cd "$1" || {
     exit 1
 }
 
+option="$2"
+# check specified platforms
+if [[ "$option" != "all" && "$option" != "ios" && "$option" != "android" ]]; then
+  echo "Invalid option: $option"
+  exit 1
+fi
+
 # Check if the required environment variables are set for Android
 if [[ -z "${ANDROID_SDK_ROOT}" || -z "${ANDROID_HOME}" || -z "${JAVA_HOME}" ]]; then
     if [[ "$2" == "android" || "$2" == "all" ]]; then
