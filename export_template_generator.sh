@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # from project root: 
-# sh export_template_generator.sh ~/Programming/godot/godot [all|ios|android]
+# sh ignored_utils/build_utils/export_template_generator.sh ~/Programming/godot/godot [all|ios|android]
 
 # this script allows you to generate Godot export templates for PCK encryption
 
@@ -68,17 +68,27 @@ fi
 build_ios() {
     echo "Building iOS templates..."
 
+    # clean ios build
+    echo Cleaning build with Scons
+    scons p=ios -c 
+    echo Finished cleaning build with Scons
+
     # iOS debug builds
-    scons p=ios target=template_debug arch=arm64 &&
-    scons p=ios target=template_debug ios_simulator=yes arch=x86_64 &&
-    scons p=ios target=template_debug ios_simulator=yes arch=arm64 &&
+    scons p=ios target=template_debug arch=arm64 tools=no &&
+    scons p=ios target=template_debug ios_simulator=yes arch=x86_64 tools=no &&
+    scons p=ios target=template_debug ios_simulator=yes arch=arm64 tools=no &&
 
     # iOS release builds
-    scons p=ios target=template_release arch=arm64 &&
-    scons p=ios target=template_release arch=arm64 ios_simulator=yes &&
-    scons p=ios target=template_release arch=x86_64 ios_simulator=yes &&
+    scons p=ios target=template_release arch=arm64 tools=no &&
+    scons p=ios target=template_release arch=arm64 ios_simulator=yes tools=no &&
+    scons p=ios target=template_release arch=x86_64 ios_simulator=yes tools=no &&
 
     cd bin &&
+    
+    echo Deleting old ios_xcode folder
+    rm -rf ios_xcode/
+    
+    echo Copying new ios_xcode folder
     cp -r ../misc/dist/ios_xcode . &&
 
     # make debug fat
@@ -89,11 +99,20 @@ build_ios() {
     lipo -create libgodot.ios.template_release.arm64.simulator.a libgodot.ios.template_release.x86_64.simulator.a -output  ios_xcode/libgodot.ios.release.xcframework/ios-arm64_x86_64-simulator/libgodot.a &&
 
     # The MoltenVK static .xcframework folder must also be placed in the ios_xcode folder once it has been created.
-    cp -r "${VULKAN_SDK}/MoltenVK/MoltenVK.xcframework" ios_xcode/debug/
-    cp -r "${VULKAN_SDK}/MoltenVK/MoltenVK.xcframework" ios_xcode/release/
+    echo Copying MoltenVK...
+    cp "${VULKAN_SDK}/MoltenVK/MoltenVK.xcframework/Info.plist" ios_xcode/
+    cp "${VULKAN_SDK}/MoltenVK/MoltenVK.xcframework/ios-arm64" ios_xcode/
+    cp "${VULKAN_SDK}/MoltenVK/MoltenVK.xcframework/ios-arm64_x86_64-maccatalyst" ios_xcode/
+    cp "${VULKAN_SDK}/MoltenVK/MoltenVK.xcframework/ios-arm64_x86_64-simulator" ios_xcode/
+    echo Finished copying MoltenVK...
 
-    cd ios_xcode/ && zip -q -9 -r ../ios.zip *
+    echo Deleting old ios.zip if exists
+    rm ios.zip
 
+    echo "Zipping..."
+    # exclude unneeded release and debug folders
+    cd ios_xcode/ && zip -q -9 -r ../ios.zip * -x "release/*" -x "debug/*"    
+    
     echo "iOS export completed."
 }
 
@@ -105,17 +124,17 @@ build_android() {
     cd ../../../ &&
 
     # Android builds
-    scons platform=android target=template_release arch=armv7 &&
-    scons platform=android target=template_release arch=arm64v8 &&
-    scons platform=android target=template_release arch=x86 &&
-    scons platform=android target=template_release arch=x86_64 &&
+    scons platform=android target=template_release arch=armv7 tools=no &&
+    scons platform=android target=template_release arch=arm64v8 tools=no &&
+    scons platform=android target=template_release arch=x86 tools=no &&
+    scons platform=android target=template_release arch=x86_64 tools=no &&
 
 
     # Debug builds for Android
-    scons platform=android target=template_debug arch=armv7 &&
-    scons platform=android target=template_debug arch=arm64v8 &&
-    scons platform=android target=template_debug arch=x86 &&
-    scons platform=android target=template_debug arch=x86_64 &&
+    scons platform=android target=template_debug arch=armv7 tools=no &&
+    scons platform=android target=template_debug arch=arm64v8 tools=no &&
+    scons platform=android target=template_debug arch=x86 tools=no &&
+    scons platform=android target=template_debug arch=x86_64 tools=no &&
 
     # Generate Godot templates for Android
     cd platform/android/java &&
